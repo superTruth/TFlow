@@ -44,6 +44,8 @@ public class TFlow {
             return;
         }
 
+        stopFlowFlag = false;
+
         for (InternalAction internalAction : internalActions) {
             if(internalAction.action == action){
                 runningAction = internalAction;
@@ -60,6 +62,12 @@ public class TFlow {
     }
 
     private void flowLoop(){
+
+        if(stopFlowFlag && (stopFlowListener != null)){
+            stopFlowListener.onStop();
+            running = false;
+            return;
+        }
 
         if((runningAction == null) || (runningAction.action.getTag() == -1)){  // 未添加映射的action
             running = false;
@@ -155,5 +163,17 @@ public class TFlow {
         public boolean canCB = false;
 
         public IActionCB actionCB;
+    }
+
+
+    private boolean stopFlowFlag = false;
+    private StopFlowListener stopFlowListener;
+    public void cancelFlow(StopFlowListener listener){
+        stopFlowListener = listener;
+        stopFlowFlag = true;
+    }
+
+    public interface StopFlowListener{
+        void onStop();
     }
 }

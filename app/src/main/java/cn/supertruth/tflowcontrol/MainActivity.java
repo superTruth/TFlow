@@ -1,6 +1,8 @@
 package cn.supertruth.tflowcontrol;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 
 import cn.nexgo.tflow.TFlow;
@@ -9,6 +11,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Handler handler = new Handler(Looper.getMainLooper());
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -17,9 +20,9 @@ public class MainActivity extends AppCompatActivity {
         testTFlow();
     }
 
+    private TFlow tFlow;
     private void testTFlow(){
-        TFlow tFlow = new TFlow();
-
+        tFlow = new TFlow();
         // action1 -> action2
         tFlow.addAction(action1, new TFlow.IActionLink<String>() {
             @Override
@@ -28,34 +31,38 @@ public class MainActivity extends AppCompatActivity {
                 return action2;
             }
         }, Schedulers.io());
-
         // action2 -> action3
         tFlow.addAction(action2, new TFlow.IActionLink<Integer>() {
             @Override
             public TFlow.IAction nextAction(Integer obj) {
-                if(obj == null){
-                    return action1;
-                }
                 action3.setParams(obj);
                 return action3;
             }
         }, AndroidSchedulers.mainThread());
-
         // action3 -> action1
         tFlow.addAction(action3, new TFlow.IActionLink<Integer>() {
             @Override
             public TFlow.IAction nextAction(Integer obj) {
-
                 if(obj == 6){
                     action1.setParams(obj);
                     return action1;
                 }
-
                 return null;
             }
         }, Schedulers.newThread());
+        tFlow.startFlow(action1);       // 启动流程
 
-        tFlow.startFlow(action1);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                tFlow.cancelFlow(new TFlow.StopFlowListener() {
+                    @Override
+                    public void onStop() {
+                        System.out.println("onStop");
+                    }
+                });
+            }
+        }, 4000);
     }
 
     private TFlow.IAction action1 = new TFlow.IAction<Integer, String>(){
@@ -66,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     super.run();
 
+                    System.out.println("action 1");
                     try {
                         sleep(2000);
                     } catch (InterruptedException e) {
@@ -85,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     super.run();
-
+                    System.out.println("action 2");
                     try {
                         sleep(2000);
                     } catch (InterruptedException e) {
@@ -105,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     super.run();
-
+                    System.out.println("action 3");
                     try {
                         sleep(2000);
                     } catch (InterruptedException e) {
