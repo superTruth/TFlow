@@ -9,6 +9,7 @@ import cn.nexgo.tflow.TFlow;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -23,6 +24,30 @@ public class MainActivity extends AppCompatActivity {
     private TFlow tFlow;
     private void testTFlow(){
         tFlow = new TFlow();
+
+        tFlow.setStatuesListenner(new TFlow.StatuesListenner(){
+
+            @Override
+            public void onFlowComplete() {
+                System.out.println("flow onFlowComplete");
+            }
+
+            @Override
+            public void onFlowCancel() {
+                System.out.println("flow onFlowCancel");
+            }
+
+            @Override
+            public void onActionStart(TFlow.IAction action) {
+                System.out.println("start actino->"+action.toString());
+            }
+
+            @Override
+            public void onActionFinish(TFlow.IAction action) {
+                System.out.println("finish actino->"+action.toString());
+            }
+        });
+
         // action1 -> action2
         tFlow.addAction(action1, new TFlow.IActionLink<String>() {
             @Override
@@ -52,17 +77,17 @@ public class MainActivity extends AppCompatActivity {
         }, Schedulers.newThread());
         tFlow.startFlow(action1);       // 启动流程
 
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                tFlow.cancelFlow(new TFlow.StopFlowListener() {
-                    @Override
-                    public void onStop() {
-                        System.out.println("onStop");
-                    }
-                });
-            }
-        }, 4000);
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                tFlow.cancelFlow(new TFlow.StopFlowListener() {
+//                    @Override
+//                    public void onStop() {
+//                        System.out.println("onStop");
+//                    }
+//                });
+//            }
+//        }, 4000);
     }
 
     private TFlow.IAction action1 = new TFlow.IAction<Integer, String>(){
@@ -84,6 +109,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }.start();
         }
+
+        @Override
+        public String toString() {
+            return "action1";
+        }
     };
 
     private TFlow.IAction action2 = new TFlow.IAction<String, Integer>(){
@@ -104,6 +134,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }.start();
         }
+
+        @Override
+        public String toString() {
+            return "action2";
+        }
     };
 
     private TFlow.IAction action3 = new TFlow.IAction<Integer, Integer>(){
@@ -120,11 +155,14 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
 
-                    cb.finish(6);
+                    cb.finish(5);
                 }
             }.start();
+        }
 
-
+        @Override
+        public String toString() {
+            return "action3";
         }
     };
 }

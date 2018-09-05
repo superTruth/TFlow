@@ -61,16 +61,27 @@ public class TFlow {
         flowLoop();
     }
 
+    // 循环执行
     private void flowLoop(){
 
-        if(stopFlowFlag && (stopFlowListener != null)){
-            stopFlowListener.onStop();
+        if(stopFlowFlag){
             running = false;
+
+            if(stopFlowListener != null){
+                stopFlowListener.onStop();
+            }
+            if(statuesListenner != null){
+                statuesListenner.onFlowCancel();
+            }
+
             return;
         }
 
         if((runningAction == null) || (runningAction.action.getTag() == -1)){  // 未添加映射的action
             running = false;
+            if(statuesListenner != null){
+                statuesListenner.onFlowComplete();
+            }
             return;
         }
 
@@ -83,7 +94,18 @@ public class TFlow {
                     }
                     runningAction.canCB = false;
 
-                    runningAction = internalActions.get(runningAction.actionLink.nextAction(obj).getTag());
+                    if(statuesListenner != null){  //  action结束状态回调
+                        statuesListenner.onActionFinish(runningAction.action);
+                    }
+
+                    IAction action = runningAction.actionLink.nextAction(obj);  // 寻找下一个action
+                    if(action == null){
+                        runningAction = null;
+                        flowLoop();
+                        return;
+                    }
+
+                    runningAction = internalActions.get(action.getTag());
 
                     flowLoop();  // 继续执行action循环
                 }
@@ -95,6 +117,9 @@ public class TFlow {
             @Override
             public void subscribe(ObservableEmitter<Object> e) throws Exception {
                 runningAction.canCB = true;
+                if(statuesListenner != null){
+                    statuesListenner.onActionStart(runningAction.action);
+                }
                 runningAction.action.onRun(runningAction.actionCB);
             }
         });
@@ -166,6 +191,9 @@ public class TFlow {
     }
 
 
+    /**
+     * cancel flow
+     */
     private boolean stopFlowFlag = false;
     private StopFlowListener stopFlowListener;
     public void cancelFlow(StopFlowListener listener){
@@ -176,4 +204,28 @@ public class TFlow {
     public interface StopFlowListener{
         void onStop();
     }
+
+    /**
+     * StatuesListenner
+     */
+    private StatuesListenner statuesListenner;
+    public void setStatuesListenner(StatuesListenner statuesListenner){
+        this.statuesListenner = statuesListenner;
+    }
+
+    public interface StatuesListenner{
+        void onFlowComplete();
+        void onFlowCancel();
+        void onActionStart(IAction action);
+        void onActionFinish(IAction action);
+    }
+
+    /**
+     * 判断流程是否真正进行
+     * @return
+     */
+    public boolean isRunning(){
+        return running;
+    }
+
 }
