@@ -58,6 +58,10 @@ public class TFlow {
 
         running = true;
 
+        if(statuesListenner != null){
+            statuesListenner.onFlowStart();
+        }
+
         flowLoop();
     }
 
@@ -214,6 +218,7 @@ public class TFlow {
     }
 
     public interface StatuesListenner{
+        void onFlowStart();
         void onFlowComplete();
         void onFlowCancel();
         void onActionStart(IAction action);

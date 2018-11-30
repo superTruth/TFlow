@@ -28,6 +28,11 @@ public class MainActivity extends AppCompatActivity {
         tFlow.setStatuesListenner(new TFlow.StatuesListenner(){
 
             @Override
+            public void onFlowStart() {
+                System.out.println("flow onFlowStart");
+            }
+
+            @Override
             public void onFlowComplete() {
                 System.out.println("flow onFlowComplete");
             }
