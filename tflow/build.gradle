@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion 18
         targetSdkVersion 26
-        versionCode 3
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.3"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
@@ -77,7 +77,7 @@ install {
                 //添加开发者信息
                 developers {
                     developer {
-                        id 'superTruth'
+                        id 'supertruth'
                         name 'Fang'
                         email '446876407@qq.com'
                     }

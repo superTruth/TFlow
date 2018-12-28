@@ -1,4 +1,4 @@
-package cn.nexgo.tflow;
+package cn.truth.tflow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +9,8 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Scheduler;
 
 /***************************************************************************************************
- *                                  Copyright (C), Nexgo Inc.                                      *
- *                                    http://www.nexgo.cn                                          *
+ *                                  Copyright (C), Truth Inc.                                      *
+ *                                    http://www.truth.cn                                          *
  ***************************************************************************************************
  * usage           : 
  * Version         : 1
@@ -65,7 +65,9 @@ public class TFlow {
         flowLoop();
     }
 
-    // 循环执行
+    /**
+     *
+     */
     private void flowLoop(){
 
         if(stopFlowFlag){

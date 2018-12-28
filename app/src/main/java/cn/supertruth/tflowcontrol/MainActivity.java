@@ -5,7 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 
-import cn.nexgo.tflow.TFlow;
+import cn.truth.tflow.TFlow;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
