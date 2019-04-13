@@ -1,16 +1,19 @@
 package cn.supertruth.tflowcontrol;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v7.app.AppCompatActivity;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import cn.truth.tflow.LoopAction;
 import cn.truth.tflow.TFlow;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private Handler handler = new Handler(Looper.getMainLooper());
     @Override
@@ -19,13 +22,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         testTFlow();
+
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                tFlow.cancelFlow(new TFlow.StopFlowListener() {
+//                    @Override
+//                    public void onStop() {
+//                        System.out.println("tflow onStop");
+//                    }
+//                });
+//            }
+//        }, 3000);
     }
 
     private TFlow tFlow;
     private void testTFlow(){
         tFlow = new TFlow();
 
-        tFlow.setStatuesListenner(new TFlow.StatuesListenner(){
+        tFlow.setStatuesListener(new TFlow.StatuesListener(){
 
             @Override
             public void onFlowStart() {
@@ -51,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
             public void onActionFinish(TFlow.IAction action) {
                 System.out.println("finish actino->"+action.toString());
             }
+
         });
 
         // action1 -> action2
@@ -60,7 +76,8 @@ public class MainActivity extends AppCompatActivity {
                 action2.setParams(obj);
                 return action2;
             }
-        }, Schedulers.io());
+
+        }, new TFlow.Parameters().setScheduler(Schedulers.io()).setTimeout(1000));
         // action2 -> action3
         tFlow.addAction(action2, new TFlow.IActionLink<Integer>() {
             @Override
@@ -68,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
                 action3.setParams(obj);
                 return action3;
             }
-        }, AndroidSchedulers.mainThread());
+        }, new TFlow.Parameters().setScheduler(Schedulers.io()));
         // action3 -> action1
         tFlow.addAction(action3, new TFlow.IActionLink<Integer>() {
             @Override
@@ -77,9 +94,26 @@ public class MainActivity extends AppCompatActivity {
                     action1.setParams(obj);
                     return action1;
                 }
+
+                List<String> params = new ArrayList<>();
+                params.add("param1");
+                params.add("param2");
+                params.add("param3");
+
+                loopAction4.setParams(params);
+                return loopAction4;
+            }
+        },  new TFlow.Parameters().setScheduler(Schedulers.io()));
+
+        // action 4
+        tFlow.addAction(loopAction4, new TFlow.IActionLink<String>() {
+            @Override
+            public TFlow.IAction nextAction(String obj) {
+                System.out.println("action4 ret ->"+obj);
                 return null;
             }
-        }, Schedulers.newThread());
+        });
+
         tFlow.startFlow(action1);       // 启动流程
 
 //        handler.postDelayed(new Runnable() {
@@ -116,6 +150,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onTimeout() {
+
+        }
+
+        @Override
+        public void cancel() {
+            System.out.println("action1 cancel");
+        }
+
+        @Override
         public String toString() {
             return "action1";
         }
@@ -141,8 +185,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onTimeout() {
+
+        }
+
+        @Override
         public String toString() {
             return "action2";
+        }
+
+        @Override
+        public void cancel() {
+            System.out.println("action2 cancel");
         }
     };
 
@@ -166,8 +220,94 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        protected void onTimeout() {
+
+        }
+
+        @Override
         public String toString() {
             return "action3";
+        }
+
+        @Override
+        public void cancel() {
+            System.out.println("action3 cancel");
+        }
+    };
+
+
+    private LoopAction<List<String>, String, String, String> loopAction4 = new LoopAction<List<String>, String, String, String>(new TFlow.IAction<String, String>() {
+        @Override
+        protected void onRun(TFlow.IActionCB<String> cb) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            cb.finish(getParams());
+        }
+
+        @Override
+        protected void onTimeout() {
+
+        }
+
+        @Override
+        public void cancel() {
+
+        }
+    }) {
+
+        @Override
+        protected void onTimeout() {
+
+        }
+
+        @Override
+        public void cancel() {
+
+        }
+
+        @Override
+        public String toString() {
+            return "loopAction4";
+        }
+
+        private int index = 0;
+        @Override
+        protected void loopStart() {
+            index = 0;
+        }
+
+        @Override
+        protected String getFinalRet() {
+            return sb.toString();
+        }
+
+        private StringBuilder sb = new StringBuilder();
+        @Override
+        protected void setOneRet(String out) {
+            sb.append(out);
+            System.out.println("loopAction4 setOneRet->"+out+"\n");
+        }
+
+        @Override
+        protected String pickOneEvent() {
+            System.out.println("loopAction4 pickOneEvent");
+
+            List<String> events = getParams();
+            if(events == null){
+                return null;
+            }
+
+            if(index >= events.size()){  // 结束
+                return null;
+            }
+
+            String event = events.get(index);
+            index++;
+
+            return event;
         }
     };
 }
