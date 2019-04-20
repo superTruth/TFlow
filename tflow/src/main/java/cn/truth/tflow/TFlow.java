@@ -24,21 +24,20 @@ import io.reactivex.functions.Consumer;
 public class TFlow {
     private List<InternalAction> internalActions = new ArrayList<>();
 
-    public <I, O> void addAction(IAction<I, O> action, IActionLink<O> subscribe) {
-        addAction(action, subscribe, null);
+    public <I, O> void addAction(IAction<I, O> action, IActionLink<O> subscribe, RunParameters runParameters) {
+        action.runParameters = runParameters;
+        addAction(action, subscribe);
     }
 
-    public <I, O> void addAction(IAction<I, O> action, IActionLink<O> subscribe, Parameters parameters) {
+    public <I, O> void addAction(IAction<I, O> action, IActionLink<O> subscribe) {
 
         InternalAction internalAction = new InternalAction();
         internalAction.action = action;
         internalAction.actionLink = subscribe;
         internalAction.action.setTag(internalActions.size());
 
-        if (parameters == null) {
-            internalAction.parameters = new Parameters();
-        } else {
-            internalAction.parameters = parameters;
+        if (internalAction.action.runParameters == null) {
+            internalAction.action.runParameters = new RunParameters();
         }
 
         internalActions.add(internalAction);
@@ -77,6 +76,7 @@ public class TFlow {
      *
      */
     private Disposable timeoutDisposable;
+    private Disposable delayDisposable;
 
     private void flowLoop() {
 
@@ -136,8 +136,8 @@ public class TFlow {
         }
 
         // 配置了超时时间
-        if (runningAction.parameters.timeout > 0) {
-            timeoutDisposable = Observable.timer(runningAction.parameters.timeout, TimeUnit.MILLISECONDS).subscribe(new Consumer<Long>() {
+        if ((runningAction.action.runParameters != null) && (runningAction.action.runParameters.timeout > 0)) {
+            timeoutDisposable = Observable.timer(runningAction.action.runParameters.timeout, TimeUnit.MILLISECONDS).subscribe(new Consumer<Long>() {
                 @Override
                 public void accept(Long aLong) throws Exception {
                     timeoutDisposable = null;
@@ -148,7 +148,7 @@ public class TFlow {
         }
 
         // 开始执行任务
-        Observable<Object> objectObservable = Observable.create(new ObservableOnSubscribe<Object>() {
+        final Observable<Object> objectObservable = Observable.create(new ObservableOnSubscribe<Object>() {
             @Override
             public void subscribe(ObservableEmitter<Object> e) throws Exception {
                 runningAction.canCB = true;
@@ -159,10 +159,26 @@ public class TFlow {
             }
         });
 
-        if (runningAction.parameters.scheduler != null) {
-            objectObservable = objectObservable.subscribeOn(runningAction.parameters.scheduler);
+
+        // 设置调度线程
+        if ((runningAction.action.runParameters != null) && (runningAction.action.runParameters.scheduler != null)) {
+            objectObservable.subscribeOn(runningAction.action.runParameters.scheduler);
         }
-        objectObservable.subscribe();
+
+        // 设置调度延迟时间
+        if ((runningAction.action.runParameters != null) && (runningAction.action.runParameters.runDelay > 0)) {
+
+            delayDisposable = Observable.timer(runningAction.action.runParameters.runDelay, TimeUnit.MILLISECONDS).subscribe(new Consumer<Long>() {
+                @Override
+                public void accept(Long aLong) throws Exception {
+                    delayDisposable = null;
+                    objectObservable.subscribe();
+                }
+            });
+        } else {
+            delayDisposable = null;
+            objectObservable.subscribe();
+        }
     }
 
     /**
@@ -197,6 +213,16 @@ public class TFlow {
         final void setTag(int tag) {
             this.tag = tag;
         }
+
+        private RunParameters runParameters;
+
+        public RunParameters getRunParameters() {
+            return runParameters;
+        }
+
+        public void setRunParameters(RunParameters runParameters) {
+            this.runParameters = runParameters;
+        }
     }
 
     /**
@@ -230,24 +256,23 @@ public class TFlow {
     private static class InternalAction {
         IAction action;
         IActionLink actionLink;
-        //        public Scheduler scheduler;
-        Parameters parameters;
 
         boolean canCB = false;
 
         IActionCB actionCB;
     }
 
-    public static class Parameters {
+    public static class RunParameters {
         private Scheduler scheduler;
         private long timeout = 0;
+        private long runDelay = 0;
 
-        public Parameters setScheduler(Scheduler scheduler) {
+        public RunParameters setScheduler(Scheduler scheduler) {
             this.scheduler = scheduler;
             return this;
         }
 
-        public Parameters setTimeout(long timeout) {
+        public RunParameters setTimeout(long timeout) {
             this.timeout = timeout;
             return this;
         }
@@ -258,6 +283,15 @@ public class TFlow {
 
         public long getTimeout() {
             return timeout;
+        }
+
+        public long getRunDelay() {
+            return runDelay;
+        }
+
+        public RunParameters setRunDelay(long runDelay) {
+            this.runDelay = runDelay;
+            return this;
         }
     }
 
@@ -272,9 +306,14 @@ public class TFlow {
         stopFlowListener = listener;
         stopFlowFlag = true;
 
+        if (delayDisposable != null) {
+            delayDisposable.dispose();
+        }
+
         if (runningAction != null) {
             runningAction.action.cancel();
         }
+
     }
 
     public interface StopFlowListener {

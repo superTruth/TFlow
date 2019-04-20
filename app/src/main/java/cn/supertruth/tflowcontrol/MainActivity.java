@@ -74,10 +74,11 @@ public class MainActivity extends Activity {
             @Override
             public TFlow.IAction nextAction(String obj) {
                 action2.setParams(obj);
+                action2.setRunParameters(action2.getRunParameters().setRunDelay(3000));
                 return action2;
             }
 
-        }, new TFlow.Parameters().setScheduler(Schedulers.io()).setTimeout(1000));
+        }, new TFlow.RunParameters().setScheduler(Schedulers.io()).setTimeout(1000));
         // action2 -> action3
         tFlow.addAction(action2, new TFlow.IActionLink<Integer>() {
             @Override
@@ -85,7 +86,7 @@ public class MainActivity extends Activity {
                 action3.setParams(obj);
                 return action3;
             }
-        }, new TFlow.Parameters().setScheduler(Schedulers.io()));
+        }, new TFlow.RunParameters().setScheduler(Schedulers.io()));
         // action3 -> action1
         tFlow.addAction(action3, new TFlow.IActionLink<Integer>() {
             @Override
@@ -103,7 +104,7 @@ public class MainActivity extends Activity {
                 loopAction4.setParams(params);
                 return loopAction4;
             }
-        },  new TFlow.Parameters().setScheduler(Schedulers.io()));
+        },  new TFlow.RunParameters().setScheduler(Schedulers.io()));
 
         // action 4
         tFlow.addAction(loopAction4, new TFlow.IActionLink<String>() {
@@ -138,11 +139,6 @@ public class MainActivity extends Activity {
                     super.run();
 
                     System.out.println("action 1");
-                    try {
-                        sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
 
                     cb.finish("data from action 1");
                 }
@@ -173,12 +169,6 @@ public class MainActivity extends Activity {
                 public void run() {
                     super.run();
                     System.out.println("action 2");
-                    try {
-                        sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
                     cb.finish(3);
                 }
             }.start();
