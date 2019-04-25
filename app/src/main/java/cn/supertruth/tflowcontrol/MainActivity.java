@@ -155,6 +155,7 @@ public class MainActivity extends Activity {
             System.out.println("action1 cancel");
         }
 
+
         @Override
         public String toString() {
             return "action1";
@@ -188,6 +189,7 @@ public class MainActivity extends Activity {
         public void cancel() {
             System.out.println("action2 cancel");
         }
+
     };
 
     private TFlow.IAction action3 = new TFlow.IAction<Integer, Integer>(){
@@ -223,10 +225,14 @@ public class MainActivity extends Activity {
         public void cancel() {
             System.out.println("action3 cancel");
         }
+
     };
 
 
-    private LoopAction<List<String>, String, String, String> loopAction4 = new LoopAction<List<String>, String, String, String>(new TFlow.IAction<String, String>() {
+    // <List<String>, String, String, String>    <需要处理的总事件列表，总输出结果，每次循环获取的事件，消费事件后产生的结果>
+    private LoopAction<List<String>, String, String, String> loopAction4 = new LoopAction<List<String>, String, String, String>(
+            // 消费Action
+            new TFlow.IAction<String, String>() {
         @Override
         protected void onRun(TFlow.IActionCB<String> cb) {
             try {
@@ -246,7 +252,8 @@ public class MainActivity extends Activity {
         public void cancel() {
 
         }
-    }) {
+
+            }) {
 
         @Override
         protected void onTimeout() {
@@ -265,24 +272,24 @@ public class MainActivity extends Activity {
 
         private int index = 0;
         @Override
-        protected void loopStart() {
+        protected void loopStart() {   // 循环开始
             index = 0;
         }
 
         @Override
-        protected String getFinalRet() {
+        protected String getFinalRet() {  // 获取循环最终结果
             return sb.toString();
         }
 
         private StringBuilder sb = new StringBuilder();
         @Override
-        protected void setOneRet(String out) {
+        protected void setOneRet(String out) {  // 消费一次循环后，产生的结果回调
             sb.append(out);
             System.out.println("loopAction4 setOneRet->"+out+"\n");
         }
 
         @Override
-        protected String pickOneEvent() {
+        protected String pickOneEvent() {    // 事件产生器
             System.out.println("loopAction4 pickOneEvent");
 
             List<String> events = getParams();

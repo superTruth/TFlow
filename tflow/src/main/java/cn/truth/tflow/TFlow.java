@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
 import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -165,6 +166,27 @@ public class TFlow {
             objectObservable.subscribeOn(runningAction.action.runParameters.scheduler);
         }
 
+//        final Observer observer = new Observer<Object>() {
+//            @Override
+//            public void onSubscribe(Disposable d) {
+//
+//            }
+//
+//            @Override
+//            public void onNext(Object value) {
+//
+//            }
+//
+//            @Override
+//            public void onError(Throwable e) {
+//                runningAction.action.onCrash(e);
+//            }
+//
+//            @Override
+//            public void onComplete() {
+//
+//            }
+//        };
         // 设置调度延迟时间
         if ((runningAction.action.runParameters != null) && (runningAction.action.runParameters.runDelay > 0)) {
 
@@ -172,13 +194,16 @@ public class TFlow {
                 @Override
                 public void accept(Long aLong) throws Exception {
                     delayDisposable = null;
+//                    objectObservable.subscribe(observer);
                     objectObservable.subscribe();
                 }
             });
         } else {
             delayDisposable = null;
+//            objectObservable.subscribe(observer);
             objectObservable.subscribe();
         }
+
     }
 
     /**
@@ -195,6 +220,8 @@ public class TFlow {
         protected abstract void onTimeout();
 
         public abstract void cancel();
+
+//        protected abstract void onCrash(Throwable e);
 
         private I params;
 
@@ -308,6 +335,7 @@ public class TFlow {
 
         if (delayDisposable != null) {
             delayDisposable.dispose();
+            flowLoop();
         }
 
         if (runningAction != null) {
